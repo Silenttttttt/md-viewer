@@ -512,7 +512,7 @@ interface FindState {
 const F: FindState = { open: false, query: '', matches: [], idx: 0, savedHTML: '' };
 
 function openFind(): void {
-  if (S.mode === 'edit') return; // CodeMirror has its own search
+  if (S.mode === 'edit') return;
   F.open = true;
   ($('find-bar') as HTMLElement).classList.remove('hidden');
   const inp = $('find-input') as HTMLInputElement;
@@ -529,6 +529,10 @@ function closeFind(): void {
 }
 
 function _clearFind(): void {
+  // Clear scrollbar markers
+  const track = $('find-scroll-marks') as HTMLElement;
+  if (track) track.innerHTML = '';
+
   if (F.savedHTML) {
     ($('md') as HTMLElement).innerHTML = F.savedHTML;
     F.savedHTML = '';
@@ -540,11 +544,43 @@ function _clearFind(): void {
   ($('find-input') as HTMLInputElement).classList.remove('no-match');
 }
 
+// Re-query live mark elements — avoids stale refs that cause navigation to break
+function _liveFindMarks(): HTMLElement[] {
+  return Array.from(($('md') as HTMLElement).querySelectorAll<HTMLElement>('mark.find-hit'));
+}
+
+function _buildScrollbarMarkers(): void {
+  const track = $('find-scroll-marks') as HTMLElement;
+  if (!track || !F.matches.length) return;
+  track.innerHTML = '';
+  const pp = $('preview-pane') as HTMLElement;
+  const scrollH = pp.scrollHeight;
+  if (scrollH <= pp.clientHeight) return;
+  const ppRect = pp.getBoundingClientRect();
+  F.matches.forEach((match, i) => {
+    const mRect = match.getBoundingClientRect();
+    const absTop = pp.scrollTop + mRect.top - ppRect.top;
+    const pct = Math.min(99, Math.max(1, (absTop / scrollH) * 100));
+    const dot = document.createElement('div');
+    dot.className = `fsm${i === F.idx ? ' cur' : ''}`;
+    dot.style.top = `${pct}%`;
+    track.appendChild(dot);
+  });
+}
+
+function _updateScrollbarCursor(): void {
+  const track = $('find-scroll-marks') as HTMLElement;
+  if (!track) return;
+  track.querySelectorAll<HTMLElement>('.fsm').forEach((dot, i) => {
+    dot.classList.toggle('cur', i === F.idx);
+  });
+}
+
 function _highlightTextNodes(root: HTMLElement, regex: RegExp): void {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node: Node) {
       const tag = (node as Text).parentElement?.tagName?.toLowerCase() ?? '';
-      if (['script','style','code','pre'].includes(tag)) return NodeFilter.FILTER_REJECT;
+      if (['script','style','code','pre','mark'].includes(tag)) return NodeFilter.FILTER_REJECT;
       if (!node.textContent?.trim()) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     },
@@ -576,11 +612,13 @@ function _highlightTextNodes(root: HTMLElement, regex: RegExp): void {
 
 function _doFind(query: string): void {
   const mdEl = $('md') as HTMLElement;
-  if (F.savedHTML) { mdEl.innerHTML = F.savedHTML; F.savedHTML = ''; }
+  // Always restore clean HTML before re-highlighting
+  if (F.savedHTML) { mdEl.innerHTML = F.savedHTML; F.savedHTML = ''; const tab = getActive(); if (tab) reattachLinks(tab); }
   if (!query.trim()) {
     F.matches = [];
     ($('find-count') as HTMLElement).textContent = '';
     ($('find-input') as HTMLInputElement).classList.remove('no-match');
+    ($('find-scroll-marks') as HTMLElement).innerHTML = '';
     return;
   }
   F.savedHTML = mdEl.innerHTML;
@@ -588,36 +626,48 @@ function _doFind(query: string): void {
     const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     _highlightTextNodes(mdEl, regex);
   } catch (_) { return; }
-  F.matches = Array.from(mdEl.querySelectorAll<HTMLElement>('mark.find-hit'));
+  // Always re-query from live DOM after highlighting
+  F.matches = _liveFindMarks();
   F.idx = 0;
   const inp = $('find-input') as HTMLInputElement;
   if (F.matches.length === 0) {
     inp.classList.add('no-match');
     ($('find-count') as HTMLElement).textContent = 'No results';
+    ($('find-scroll-marks') as HTMLElement).innerHTML = '';
     return;
   }
   inp.classList.remove('no-match');
   _activateMatch(0);
+  // Build scrollbar markers after first paint
+  requestAnimationFrame(_buildScrollbarMarkers);
 }
 
 function _activateMatch(idx: number): void {
+  // Re-query from live DOM every time — eliminates stale reference bugs
+  F.matches = _liveFindMarks();
+  if (!F.matches.length) return;
+
+  // Safe modulo (handles any idx value)
+  F.idx = ((idx % F.matches.length) + F.matches.length) % F.matches.length;
+
   F.matches.forEach(m => m.classList.remove('current'));
-  const el = F.matches[idx];
-  if (!el) return;
+  const el = F.matches[F.idx];
   el.classList.add('current');
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  ($('find-count') as HTMLElement).textContent = `${idx + 1} of ${F.matches.length}`;
+
+  // Use 'instant' instead of 'smooth' — avoids scroll-queue buildup on rapid clicks
+  el.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'nearest' });
+  ($('find-count') as HTMLElement).textContent = `${F.idx + 1} of ${F.matches.length}`;
+
+  _updateScrollbarCursor();
 }
 
 function findNext(): void {
-  if (!F.matches.length) return;
-  F.idx = (F.idx + 1) % F.matches.length;
-  _activateMatch(F.idx);
+  if (!F.matches.length && !_liveFindMarks().length) return;
+  _activateMatch(F.idx + 1);
 }
 function findPrev(): void {
-  if (!F.matches.length) return;
-  F.idx = (F.idx - 1 + F.matches.length) % F.matches.length;
-  _activateMatch(F.idx);
+  if (!F.matches.length && !_liveFindMarks().length) return;
+  _activateMatch(F.idx - 1);
 }
 
 // ─── Drag & drop ──────────────────────────────────────────

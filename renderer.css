@@ -299,6 +299,20 @@ html, body {
 }
 #layout.mode-split #preview-pane { display: flex; }
 
+/* ─── Find scrollbar markers ─────────────────────────── */
+#preview-pane { position: relative; }
+#find-scroll-marks {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 7px; pointer-events: none; z-index: 40;
+}
+.fsm {
+  position: absolute; right: 1px; left: 1px; height: 3px;
+  background: rgba(210,153,34,.6); border-radius: 2px;
+  transform: translateY(-50%);
+  transition: background .1s;
+}
+.fsm.cur { background: rgba(255,140,0,.95); height: 5px; border-radius: 3px; }
+
 /* ─── Find bar ───────────────────────────────────────── */
 #find-bar {
   display: flex; align-items: center; gap: 6px;
