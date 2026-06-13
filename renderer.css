@@ -192,7 +192,7 @@ html, body {
 }
 #content-area.no-tabs #empty { display: flex; }
 #content-area.no-tabs #editor-pane,
-#content-area.no-tabs #preview-pane { display: none !important; }
+#content-area.no-tabs #preview-outer { display: none !important; }
 
 #empty h2 { font-size: 17px; font-weight: 500; }
 #empty p { font-size: 13px; }
@@ -290,17 +290,25 @@ html, body {
 
 /* Layout modes — controlled by #layout classes */
 #layout.mode-preview #editor-pane { display: none; }
-#layout.mode-preview #preview-pane { display: flex; }
+#layout.mode-preview #preview-outer { display: flex; }
 #layout.mode-edit #editor-pane { display: flex; }
-#layout.mode-edit #preview-pane { display: none; }
+#layout.mode-edit #preview-outer { display: none; }
 #layout.mode-split #editor-pane {
   display: flex;
   border-right: 1px solid var(--border);
 }
-#layout.mode-split #preview-pane { display: flex; }
+#layout.mode-split #preview-outer { display: flex; }
+
+/* ─── Preview outer (non-scrolling wrapper) ────────── */
+#preview-outer {
+  flex: 1; min-width: 0;
+  display: none;          /* shown via mode classes */
+  flex-direction: column;
+  position: relative;     /* positioning context for #find-scroll-marks */
+}
 
 /* ─── Find scrollbar markers ─────────────────────────── */
-#preview-pane { position: relative; }
+/* Lives in #preview-outer (NOT in the scroll container) → stays fixed while content scrolls */
 #find-scroll-marks {
   position: absolute; top: 0; right: 0; bottom: 0;
   width: 7px; pointer-events: none; z-index: 40;
@@ -363,7 +371,7 @@ html, body {
   flex: 1; min-width: 0;
   flex-direction: column;
   overflow-y: auto; scroll-behavior: smooth;
-  display: none;
+  display: flex; /* always shown inside #preview-outer */
 }
 
 #wrap {
@@ -530,7 +538,8 @@ body.drag-over::after {
 @media print {
   #toolbar, #tabbar, #sidebar, #statusbar, #editor-pane, #reload-bar { display: none !important; }
   #layout { position: static; height: auto; }
-  #preview-pane { overflow: visible; display: block !important; }
+  #preview-outer { display: flex !important; }
+  #preview-pane { overflow: visible; display: flex !important; }
   #wrap { max-width: none !important; padding: 0; }
   body { overflow: visible; }
 }

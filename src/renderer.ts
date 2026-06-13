@@ -15,7 +15,7 @@ const S: AppState = {
   theme: window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark',
   zoom: 1,
   tocOpen: true,
-  wide: false,
+  wide: true,
   mermaidLoaded: false,
   tocObserver: null,
 };
@@ -741,6 +741,11 @@ document.addEventListener('keydown', (e: KeyboardEvent) => {
 // ─── Initialization ───────────────────────────────────────
 async function init(): Promise<void> {
   setTheme(S.theme);
+
+  // Apply default wide mode
+  ($('wrap') as HTMLElement).classList.add('wide');
+  ($('icon-narrow') as HTMLElement).style.display = 'none';
+  ($('icon-wide') as HTMLElement).style.display = '';
 
   // Wire up toolbar
   $('btn-toc').onclick     = toggleTOC;

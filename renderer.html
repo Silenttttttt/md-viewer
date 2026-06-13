@@ -110,10 +110,13 @@
       <div id="cm-container"></div>
     </div>
 
-    <!-- Preview pane (preview / split) -->
-    <div id="preview-pane">
-      <!-- Scrollbar match markers -->
+    <!-- Preview outer — non-scrolling wrapper so markers stay fixed -->
+    <div id="preview-outer">
+      <!-- Scrollbar match markers live here, NOT inside the scroll container -->
       <div id="find-scroll-marks"></div>
+
+      <!-- Actual scrollable preview pane -->
+      <div id="preview-pane">
       <!-- Find bar (Ctrl+F) -->
       <div id="find-bar" class="hidden">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;opacity:.5">
@@ -133,7 +136,8 @@
         </div>
         <div id="md"></div>
       </div>
-    </div>
+    </div> <!-- end #preview-pane -->
+    </div> <!-- end #preview-outer -->
 
   </div>
 </div>
