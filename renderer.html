@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MDViewer</title>
+  <link id="hljs-css" rel="stylesheet" href="./lib/github-dark.min.css">
+  <link rel="stylesheet" href="./lib/codemirror.min.css">
+  <link rel="stylesheet" href="./lib/cm-dialog.css">
+  <link rel="stylesheet" href="./renderer.css">
+</head>
+<body>
+
+<!-- ─── Toolbar ──────────────────────────────────────────── -->
+<div id="toolbar">
+  <button class="tb-btn" id="btn-toc" title="Toggle sidebar (Ctrl+\)">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor">
+      <rect x="1" y="2" width="13" height="1.5" rx=".75"/>
+      <rect x="1" y="6.75" width="13" height="1.5" rx=".75"/>
+      <rect x="1" y="11.5" width="8" height="1.5" rx=".75"/>
+    </svg>
+  </button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btn-new" title="New file (Ctrl+N)">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M2 1.75C2 .784 2.784 0 3.75 0h5.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 12.25 16h-8.5A1.75 1.75 0 0 1 2 14.25V1.75zm7.75-.25v2.5c0 .138.112.25.25.25h2.5L9.75 1.5zM3.75 1.5a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25V4.5H9.75A1.75 1.75 0 0 1 8 2.75V1.5H3.75z"/>
+      <path d="M7.25 7.5a.75.75 0 0 1 1.5 0v1.75h1.75a.75.75 0 0 1 0 1.5H8.75V12.5a.75.75 0 0 1-1.5 0v-1.75H5.5a.75.75 0 0 1 0-1.5h1.75V7.5z"/>
+    </svg>
+  </button>
+  <button class="tb-btn" id="btn-open" title="Open file (Ctrl+O)">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25V6.75A1.75 1.75 0 0 0 14.25 5H6.5a.25.25 0 0 1-.2-.1L4.9 3.1A1.75 1.75 0 0 0 3.499 2.5H1.75z"/>
+    </svg>
+    Open
+  </button>
+  <div class="tb-sep"></div>
+  <div id="mode-group">
+    <button class="tb-btn mode-btn active" data-mode="preview" title="Preview (Ctrl+1)">Preview</button>
+    <button class="tb-btn mode-btn" data-mode="edit" title="Edit (Ctrl+2)">Edit</button>
+    <button class="tb-btn mode-btn" data-mode="split" title="Split (Ctrl+3)">Split</button>
+  </div>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" id="btn-save" title="Save (Ctrl+S)">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-10.5C1 .784 1.784 0 2.75 0h7.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v7.586A1.75 1.75 0 0 1 13.25 14H2.75zM2.5 12.25c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V4.664a.25.25 0 0 0-.073-.177l-2.914-2.914a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25v10.5zM6 5a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5A.75.75 0 0 1 6 5z"/>
+    </svg>
+    Save
+  </button>
+  <div id="tb-spacer"></div>
+  <button class="tb-btn" id="btn-width" title="Toggle content width (Ctrl+Shift+W)">
+    <svg id="icon-narrow" width="15" height="15" viewBox="0 0 15 15" fill="currentColor">
+      <rect x="3.5" y="2" width="8" height="1.4" rx=".7"/>
+      <rect x="3.5" y="5.3" width="8" height="1.4" rx=".7"/>
+      <rect x="3.5" y="8.6" width="8" height="1.4" rx=".7"/>
+      <rect x="3.5" y="11.6" width="5.5" height="1.4" rx=".7"/>
+      <rect x="1" y="1.5" width="1.2" height="12" rx=".6"/>
+      <rect x="12.8" y="1.5" width="1.2" height="12" rx=".6"/>
+    </svg>
+    <svg id="icon-wide" width="15" height="15" viewBox="0 0 15 15" fill="currentColor" style="display:none">
+      <rect x="1" y="2" width="13" height="1.4" rx=".7"/>
+      <rect x="1" y="5.3" width="13" height="1.4" rx=".7"/>
+      <rect x="1" y="8.6" width="13" height="1.4" rx=".7"/>
+      <rect x="1" y="11.6" width="9" height="1.4" rx=".7"/>
+    </svg>
+  </button>
+  <button class="tb-btn" id="btn-theme" title="Toggle theme (Ctrl+Shift+T)">
+    <svg id="icon-moon" width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M9.598 1.591a.749.749 0 0 1 .785-.175 7.001 7.001 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.046-7.046.75.75 0 0 1 .175-.786zm1.616 1.945a7 7 0 0 1-7.678 7.678 5.499 5.499 0 1 0 7.678-7.678z"/>
+    </svg>
+    <svg id="icon-sun" width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="display:none">
+      <path d="M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0 1.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM8 .25a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V1A.75.75 0 0 1 8 .25zm0 12.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75zM2.166 4.415a.75.75 0 0 1 1.03-.265l1.3.75a.75.75 0 1 1-.75 1.3l-1.3-.75a.75.75 0 0 1-.28-1.035zM12.5 10.8a.75.75 0 0 1 1.03-.266l1.3.75a.75.75 0 1 1-.75 1.3l-1.3-.75a.75.75 0 0 1-.28-1.034zm-10.334.8a.75.75 0 0 1 .28-1.034l1.3-.75a.75.75 0 1 1 .75 1.3l-1.3.75a.75.75 0 0 1-1.03-.266zm9.87-8.165a.75.75 0 0 1 .28-1.035l1.3-.75a.75.75 0 1 1 .75 1.3l-1.3.75a.75.75 0 0 1-1.03-.265zM1.25 8A.75.75 0 0 1 2 7.25h1.5a.75.75 0 0 1 0 1.5H2A.75.75 0 0 1 1.25 8zm11.5 0a.75.75 0 0 1 .75-.75H15a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75z"/>
+    </svg>
+  </button>
+  <button class="tb-btn" id="btn-zm" title="Zoom out (Ctrl+-)">−</button>
+  <button class="tb-btn" id="btn-zp" title="Zoom in (Ctrl+=)">+</button>
+</div>
+
+<!-- ─── Tab bar ───────────────────────────────────────────── -->
+<div id="tabbar">
+  <div id="tabs" role="tablist"></div>
+  <button id="btn-new-tab" title="New tab (Ctrl+N)">+</button>
+</div>
+
+<!-- ─── Main layout ──────────────────────────────────────── -->
+<div id="layout" class="mode-preview">
+
+  <!-- Sidebar / TOC -->
+  <div id="sidebar">
+    <div id="toc-head">Contents</div>
+    <nav id="toc"></nav>
+  </div>
+
+  <!-- Content area -->
+  <div id="content-area" class="no-tabs">
+
+    <!-- Empty state -->
+    <div id="empty">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".3">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+      <h2>Open a Markdown file</h2>
+      <p>Drop a <code>.md</code> file here or press <kbd>Ctrl+O</kbd></p>
+      <div id="recent-list"></div>
+    </div>
+
+    <!-- Editor pane (edit / split) -->
+    <div id="editor-pane">
+      <div id="cm-container"></div>
+    </div>
+
+    <!-- Preview pane (preview / split) -->
+    <div id="preview-pane">
+      <div id="wrap">
+        <div id="reload-bar" class="hidden">
+          <span>⚠ File changed on disk</span>
+          <button id="btn-reload">Reload</button>
+          <button id="btn-dismiss">Dismiss</button>
+        </div>
+        <div id="md"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── Status bar ────────────────────────────────────────── -->
+<div id="statusbar">
+  <span id="st-info"></span>
+  <div id="st-spacer"></div>
+  <span id="st-mode"></span>
+  <span id="st-file"></span>
+</div>
+
+<!-- ─── Scripts (order matters) ──────────────────────────── -->
+<script src="./lib/codemirror.min.js"></script>
+<script src="./lib/cm-xml.js"></script>
+<script src="./lib/cm-javascript.js"></script>
+<script src="./lib/cm-overlay.js"></script>
+<script src="./lib/cm-markdown.js"></script>
+<script src="./lib/cm-searchcursor.js"></script>
+<script src="./lib/cm-search.js"></script>
+<script src="./lib/cm-dialog.js"></script>
+<script src="./lib/marked.umd.js"></script>
+<script src="./lib/highlight.min.js"></script>
+<script src="./renderer.js"></script>
+</body>
+</html>
