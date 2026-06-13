@@ -4,19 +4,14 @@ module.exports = {
     {
       displayName: 'unit',
       testEnvironment: 'node',
-      testMatch: ['<rootDir>/test/unit/**/*.test.js'],
+      testMatch: ['<rootDir>/test/unit/**/*.test.ts'],
+      transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }] },
     },
     {
       displayName: 'dom',
       testEnvironment: 'jsdom',
-      testMatch: ['<rootDir>/test/dom/**/*.test.js'],
+      testMatch: ['<rootDir>/test/dom/**/*.test.ts'],
+      transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }] },
     },
   ],
-  collectCoverageFrom: [
-    'main.js',
-    'renderer.js',
-    '!**/node_modules/**',
-    '!**/lib/**',
-  ],
-  coverageReporters: ['text', 'lcov'],
 };

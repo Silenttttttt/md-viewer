@@ -49,7 +49,7 @@ echo "Installing desktop entry:"
 mkdir -p ~/.local/share/applications
 cat > ~/.local/share/applications/mdviewer.desktop << EOF
 [Desktop Entry]
-Name=MDViewer
+Name=md-viewer
 GenericName=Markdown Viewer
 Comment=Fast markdown viewer and editor with tabs, Mermaid, and live reload
 Exec=/usr/bin/electron $APP_DIR %f

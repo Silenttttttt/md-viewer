@@ -1,11 +1,14 @@
 'use strict';
 
 // ─── Utilities ────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const dbc = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const $ = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
+const dbc = (fn: (...a: unknown[]) => void, ms: number): ((...a: unknown[]) => void) => {
+  let t: ReturnType<typeof setTimeout>;
+  return (...a: unknown[]): void => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+};
 
 // ─── State ────────────────────────────────────────────────
-const S = {
+const S: AppState = {
   tabs: [],
   activeIdx: -1,
   mode: 'preview',
@@ -16,13 +19,13 @@ const S = {
   mermaidLoaded: false,
   tocObserver: null,
 };
-let tabSeq = 0;
+let tabSeq: number = 0;
 
 // ─── Theme ────────────────────────────────────────────────
-function setTheme(th) {
+function setTheme(th: Theme): void {
   S.theme = th;
   document.documentElement.dataset.theme = th;
-  $('hljs-css').href = `./lib/${th === 'light' ? 'github' : 'github-dark'}.min.css`;
+  ($('hljs-css') as HTMLLinkElement).href = `./lib/${th === 'light' ? 'github' : 'github-dark'}.min.css`;
   $('icon-moon').style.display = th === 'dark' ? '' : 'none';
   $('icon-sun').style.display  = th === 'light' ? '' : 'none';
   if (S.mermaidLoaded) {
@@ -31,28 +34,28 @@ function setTheme(th) {
 }
 
 // ─── Mermaid lazy load ────────────────────────────────────
-function loadMermaid() {
-  return new Promise(resolve => {
+function loadMermaid(): Promise<void> {
+  return new Promise<void>(resolve => {
     if (S.mermaidLoaded) return resolve();
     const s = document.createElement('script');
     s.src = './lib/mermaid.min.js';
-    s.onload = () => {
+    s.onload = (): void => {
       mermaid.initialize({ startOnLoad: false, theme: S.theme === 'light' ? 'default' : 'dark', securityLevel: 'loose', fontFamily: 'inherit' });
       S.mermaidLoaded = true;
       resolve();
     };
-    s.onerror = resolve;
+    s.onerror = (): void => resolve();
     document.head.appendChild(s);
   });
 }
 
 // ─── Admonitions ──────────────────────────────────────────
-const ADM = { note: '📝 Note', tip: '💡 Tip', important: '❗ Important', warning: '⚠️ Warning', caution: '🔥 Caution' };
-function processAdmonitions(root) {
+const ADM: Record<string, string> = { note: '📝 Note', tip: '💡 Tip', important: '❗ Important', warning: '⚠️ Warning', caution: '🔥 Caution' };
+function processAdmonitions(root: HTMLElement): void {
   root.querySelectorAll('blockquote').forEach(bq => {
     const p = bq.querySelector('p');
     if (!p) return;
-    const m = p.textContent.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
+    const m = p.textContent!.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
     if (!m) return;
     const type = m[1].toLowerCase();
     const div = document.createElement('div');
@@ -68,9 +71,9 @@ function processAdmonitions(root) {
 }
 
 // ─── TOC ──────────────────────────────────────────────────
-function buildTOC(el) {
+function buildTOC(el: HTMLElement): void {
   if (S.tocObserver) { S.tocObserver.disconnect(); S.tocObserver = null; }
-  const hs = [...el.querySelectorAll('h1,h2,h3,h4')];
+  const hs = [...el.querySelectorAll('h1,h2,h3,h4')] as HTMLElement[];
   const toc = $('toc');
   toc.innerHTML = '';
   if (hs.length < 2) return;
@@ -81,7 +84,7 @@ function buildTOC(el) {
     a.textContent = h.textContent;
     a.dataset.lvl = h.tagName[1];
     a.dataset.id  = h.id;
-    a.addEventListener('click', e => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth' }); });
+    a.addEventListener('click', (e: Event) => { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth' }); });
     toc.appendChild(a);
   });
 
@@ -90,13 +93,13 @@ function buildTOC(el) {
       toc.querySelector(`[data-id="${e.target.id}"]`)?.classList.toggle('active', e.isIntersecting);
     });
   }, { root: $('preview-pane'), rootMargin: '-4px 0px -75% 0px' });
-  hs.forEach(h => S.tocObserver.observe(h));
+  hs.forEach(h => S.tocObserver!.observe(h));
 }
 
 // ─── Render ───────────────────────────────────────────────
-const debouncedRender = dbc((tab) => renderContent(tab), 300);
+const debouncedRender = (dbc as (fn: (tab: TabState) => void, ms: number) => (tab: TabState) => void)((tab: TabState) => renderContent(tab), 300);
 
-async function renderContent(tab) {
+async function renderContent(tab: TabState): Promise<void> {
   if (!tab) return;
   const pp = $('preview-pane');
   const savedScroll = pp.scrollTop;
@@ -107,8 +110,9 @@ async function renderContent(tab) {
 
   // Heading IDs
   mdEl.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(h => {
-    if (!h.id) {
-      h.id = h.textContent.toLowerCase()
+    const hEl = h as HTMLElement;
+    if (!hEl.id) {
+      hEl.id = hEl.textContent!.toLowerCase()
         .replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').replace(/^-+|-+$/g, '') || 'h' + tabSeq++;
     }
   });
@@ -127,7 +131,7 @@ async function renderContent(tab) {
   mdEl.querySelectorAll('table').forEach(table => {
     const w = document.createElement('div');
     w.className = 'table-scroll';
-    table.parentNode.insertBefore(w, table);
+    table.parentNode!.insertBefore(w, table);
     w.appendChild(table);
   });
 
@@ -136,16 +140,17 @@ async function renderContent(tab) {
 
   // Syntax highlighting
   mdEl.querySelectorAll('pre code').forEach(block => {
-    const lang = (block.className.match(/language-(\S+)/) || [])[1] || '';
+    const codeEl = block as HTMLElement;
+    const lang = (codeEl.className.match(/language-(\S+)/) || [])[1] || '';
     if (lang === 'mermaid') return;
-    hljs.highlightElement(block);
-    const pre = block.closest('pre');
+    hljs.highlightElement(codeEl);
+    const pre = codeEl.closest('pre') as HTMLElement;
     if (lang) {
       const lb = document.createElement('span'); lb.className = 'code-lang'; lb.textContent = lang; pre.appendChild(lb);
     }
     const cp = document.createElement('button');
     cp.className = 'copy-btn'; cp.textContent = 'copy';
-    cp.onclick = () => { navigator.clipboard.writeText(block.textContent); cp.textContent = '✓'; setTimeout(() => cp.textContent = 'copy', 1600); };
+    cp.onclick = (): void => { navigator.clipboard.writeText(codeEl.textContent!); cp.textContent = '✓'; setTimeout(() => cp.textContent = 'copy', 1600); };
     pre.appendChild(cp);
   });
 
@@ -157,15 +162,16 @@ async function renderContent(tab) {
       const w = document.createElement('div'); w.className = 'mermaid-wrap';
       const inner = document.createElement('div'); inner.className = 'mermaid'; inner.textContent = block.textContent;
       w.appendChild(inner);
-      block.closest('pre').replaceWith(w);
+      (block.closest('pre') as HTMLElement).replaceWith(w);
     });
     try { await mermaid.run({ querySelector: '.mermaid' }); } catch (_) {}
   }
 
   // Links
   mdEl.querySelectorAll('a[href]').forEach(a => {
-    const href = a.getAttribute('href');
-    a.addEventListener('click', e => {
+    const aEl = a as HTMLAnchorElement;
+    const href = aEl.getAttribute('href');
+    aEl.addEventListener('click', (e: Event) => {
       e.preventDefault();
       if (!href) return;
       if (href.startsWith('#')) {
@@ -185,7 +191,7 @@ async function renderContent(tab) {
   });
 
   // Checkboxes read-only
-  mdEl.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.disabled = true);
+  mdEl.querySelectorAll('input[type="checkbox"]').forEach(cb => (cb as HTMLInputElement).disabled = true);
 
   // TOC
   buildTOC(mdEl);
@@ -194,8 +200,23 @@ async function renderContent(tab) {
   pp.scrollTop = savedScroll;
 }
 
+function reattachLinks(tab: TabState): void {
+  const mdEl = $('md') as HTMLElement;
+  mdEl.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(aEl => {
+    const href = aEl.getAttribute('href');
+    aEl.addEventListener('click', (e: Event) => {
+      e.preventDefault();
+      if (!href) return;
+      if (href.startsWith('#')) { document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }); return; }
+      if (/^https?:|^mailto:/.test(href)) window.api.openExternal(href);
+      else if (/\.(md|markdown|mdx)$/i.test(href)) openFilePath(href.startsWith('/') ? href : (tab.dir ? `${tab.dir}/${href}` : href));
+      else window.api.openPath(href.startsWith('/') ? href : (tab.dir ? `${tab.dir}/${href}` : href));
+    });
+  });
+}
+
 // ─── Editor ───────────────────────────────────────────────
-function ensureEditor(tab) {
+function ensureEditor(tab: TabState): void {
   if (tab.cm) return;
   const el = document.createElement('div');
   el.className = 'cm-instance';
@@ -218,7 +239,7 @@ function ensureEditor(tab) {
     },
   });
 
-  const onEdit = dbc(() => {
+  const onEdit = (dbc as (fn: () => void, ms: number) => () => void)(() => {
     if (!tab.cm) return;
     tab.content = tab.cm.getValue();
     tab.modified = tab.content !== tab.savedContent;
@@ -230,7 +251,7 @@ function ensureEditor(tab) {
   cm.on('change', onEdit);
 
   // Scroll sync in split mode
-  cm.on('scroll', dbc(() => {
+  cm.on('scroll', (dbc as (fn: () => void, ms: number) => () => void)(() => {
     if (S.mode !== 'split') return;
     const info = cm.getScrollInfo();
     const max = info.height - info.clientHeight;
@@ -243,28 +264,28 @@ function ensureEditor(tab) {
   tab.cmEl = el;
 }
 
-function activateEditor(tab) {
+function activateEditor(tab: TabState): void {
   ensureEditor(tab);
   document.querySelectorAll('.cm-instance').forEach(el => el.classList.remove('active'));
-  tab.cmEl.classList.add('active');
-  setTimeout(() => { tab.cm.refresh(); if (S.mode === 'edit') tab.cm.focus(); }, 20);
+  tab.cmEl!.classList.add('active');
+  setTimeout(() => { tab.cm!.refresh(); if (S.mode === 'edit') tab.cm!.focus(); }, 20);
 }
 
 // ─── Mode ─────────────────────────────────────────────────
-function setMode(mode) {
+function setMode(mode: ViewMode): void {
   if (F.open) closeFind();
   S.mode = mode;
   $('layout').className = `mode-${mode}`;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', (b as HTMLElement).dataset.mode === mode));
   const tab = getActive();
   if (tab && (mode === 'edit' || mode === 'split')) activateEditor(tab);
   updateStatus();
 }
 
 // ─── Tab management ───────────────────────────────────────
-function getActive() { return S.tabs[S.activeIdx] || null; }
+function getActive(): TabState | null { return S.tabs[S.activeIdx] || null; }
 
-function renderTabBar() {
+function renderTabBar(): void {
   const bar = $('tabs');
   bar.innerHTML = '';
   S.tabs.forEach((tab, idx) => {
@@ -273,21 +294,21 @@ function renderTabBar() {
     el.title = tab.filePath || tab.name;
     el.setAttribute('role', 'tab');
     el.innerHTML = `<span class="tab-name">${tab.name}</span>${tab.modified ? '<span class="tab-dot">●</span>' : ''}<span class="tab-close" title="Close">×</span>`;
-    el.addEventListener('click', e => {
-      if (e.target.classList.contains('tab-close')) { e.stopPropagation(); closeTab(idx); return; }
+    el.addEventListener('click', (e: MouseEvent) => {
+      if ((e.target as HTMLElement).classList.contains('tab-close')) { e.stopPropagation(); closeTab(idx); return; }
       activateTab(idx);
     });
-    el.addEventListener('auxclick', e => { if (e.button === 1) closeTab(idx); });
+    el.addEventListener('auxclick', (e: MouseEvent) => { if (e.button === 1) closeTab(idx); });
     bar.appendChild(el);
   });
   $('content-area').classList.toggle('no-tabs', S.tabs.length === 0);
 }
 
-function updateTabLabel(tab) {
+function updateTabLabel(tab: TabState): void {
   const idx = S.tabs.indexOf(tab);
-  const el = $('tabs').children[idx];
+  const el = $('tabs').children[idx] as HTMLElement;
   if (!el) return;
-  el.querySelector('.tab-name').textContent = tab.name;
+  (el.querySelector('.tab-name') as HTMLElement).textContent = tab.name;
   const dot = el.querySelector('.tab-dot');
   if (tab.modified && !dot) {
     const d = document.createElement('span'); d.className = 'tab-dot'; d.textContent = '●';
@@ -297,12 +318,12 @@ function updateTabLabel(tab) {
   }
 }
 
-function createTab(data) {
+function createTab(data: Partial<FileData> & { name?: string; content?: string; dir?: string }): void {
   if (data.filePath) {
     const idx = S.tabs.findIndex(t => t.filePath === data.filePath);
     if (idx !== -1) { activateTab(idx); return; }
   }
-  const tab = {
+  const tab: TabState = {
     id: ++tabSeq,
     filePath: data.filePath || null,
     name: data.name || 'Untitled',
@@ -320,7 +341,7 @@ function createTab(data) {
   activateTab(S.tabs.length - 1);
 }
 
-function activateTab(idx) {
+function activateTab(idx: number): void {
   if (idx < 0 || idx >= S.tabs.length) return;
   if (F.open) closeFind();
   const cur = getActive();
@@ -339,7 +360,7 @@ function activateTab(idx) {
   updateStatus();
 }
 
-function closeTab(idx) {
+function closeTab(idx: number): void {
   const tab = S.tabs[idx];
   if (!tab) return;
   if (tab.modified && !confirm(`"${tab.name}" has unsaved changes. Close anyway?`)) return;
@@ -360,12 +381,12 @@ function closeTab(idx) {
 }
 
 // ─── File operations ──────────────────────────────────────
-async function openFilePath(fp) {
+async function openFilePath(fp: string): Promise<void> {
   const data = await window.api.loadMd(fp);
   if (data) createTab(data);
 }
 
-async function saveTab() {
+async function saveTab(): Promise<void> {
   const tab = getActive();
   if (!tab) return;
   if (!tab.filePath) { await saveTabAs(); return; }
@@ -377,14 +398,14 @@ async function saveTab() {
   showToast(`Saved ${tab.name}`);
 }
 
-async function saveTabAs() {
+async function saveTabAs(): Promise<void> {
   const tab = getActive();
   if (!tab) return;
   const fp = await window.api.saveAs(tab.name, tab.content);
   if (!fp) return;
   if (tab.filePath && tab.filePath !== fp) window.api.unwatch(tab.filePath);
   tab.filePath = fp;
-  tab.name = fp.split('/').pop();
+  tab.name = fp.split('/').pop()!;
   tab.savedContent = tab.content;
   tab.modified = false;
   updateTabLabel(tab);
@@ -393,7 +414,7 @@ async function saveTabAs() {
   showToast(`Saved as ${tab.name}`);
 }
 
-async function exportHTML() {
+async function exportHTML(): Promise<void> {
   const tab = getActive();
   if (!tab) return;
   const hljsCSS = await fetch(`./lib/${S.theme === 'light' ? 'github' : 'github-dark'}.min.css`).then(r => r.text()).catch(() => '');
@@ -403,7 +424,7 @@ async function exportHTML() {
 }
 
 // ─── File change handling ─────────────────────────────────
-function handleFileChanged({ filePath, content }) {
+function handleFileChanged({ filePath, content }: { filePath: string; content: string }): void {
   const idx = S.tabs.findIndex(t => t.filePath === filePath);
   if (idx === -1) return;
   const tab = S.tabs[idx];
@@ -421,27 +442,27 @@ function handleFileChanged({ filePath, content }) {
 }
 
 // ─── Width / Zoom ─────────────────────────────────────────
-function toggleWidth() {
+function toggleWidth(): void {
   S.wide = !S.wide;
   $('wrap').classList.toggle('wide', S.wide);
   $('icon-narrow').style.display = S.wide ? 'none' : '';
   $('icon-wide').style.display   = S.wide ? '' : 'none';
 }
 
-function adjustZoom(delta) {
+function adjustZoom(delta: number): void {
   if (delta === 0) { S.zoom = 1; $('wrap').style.fontSize = ''; return; }
   S.zoom = Math.max(0.6, Math.min(2.5, S.zoom + delta));
   $('wrap').style.fontSize = S.zoom + 'em';
 }
 
 // ─── Sidebar ──────────────────────────────────────────────
-function toggleTOC() {
+function toggleTOC(): void {
   S.tocOpen = !S.tocOpen;
   $('sidebar').classList.toggle('hidden', !S.tocOpen);
 }
 
 // ─── Status bar ───────────────────────────────────────────
-function updateStatus() {
+function updateStatus(): void {
   const tab = getActive();
   if (!tab) { $('st-info').textContent = ''; $('st-mode').textContent = ''; $('st-file').textContent = ''; return; }
   const words = tab.content.trim() ? tab.content.trim().split(/\s+/).length : 0;
@@ -452,7 +473,7 @@ function updateStatus() {
 }
 
 // ─── Toast ────────────────────────────────────────────────
-function showToast(msg) {
+function showToast(msg: string): void {
   const t = document.createElement('div');
   t.className = 'toast'; t.textContent = msg;
   document.body.appendChild(t);
@@ -461,7 +482,7 @@ function showToast(msg) {
 }
 
 // ─── Recent files ─────────────────────────────────────────
-function showRecentFiles(recent) {
+function showRecentFiles(recent: string[]): void {
   const list = $('recent-list');
   if (!recent?.length) return;
   const lbl = document.createElement('p');
@@ -475,90 +496,71 @@ function showRecentFiles(recent) {
     const dir  = fp.split('/').slice(-2, -1)[0] || '';
     btn.innerHTML = `<b>${name}</b><span>${dir ? ' — ' + dir : ''}</span>`;
     btn.title = fp;
-    btn.onclick = () => openFilePath(fp);
+    btn.onclick = (): void => { openFilePath(fp); };
     list.appendChild(btn);
   });
 }
 
 // ─── Find in preview ──────────────────────────────────────
-const F = {
-  open:      false,
-  query:     '',
-  matches:   /** @type {HTMLElement[]} */ ([]),
-  idx:       0,
-  savedHTML: '',
-};
+interface FindState {
+  open: boolean;
+  query: string;
+  matches: HTMLElement[];
+  idx: number;
+  savedHTML: string;
+}
+const F: FindState = { open: false, query: '', matches: [], idx: 0, savedHTML: '' };
 
-function openFind() {
-  if (S.mode === 'edit') { /* CodeMirror has its own search */ return; }
+function openFind(): void {
+  if (S.mode === 'edit') return; // CodeMirror has its own search
   F.open = true;
-  $('find-bar').classList.remove('hidden');
-  const inp = /** @type {HTMLInputElement} */ ($('find-input'));
+  ($('find-bar') as HTMLElement).classList.remove('hidden');
+  const inp = $('find-input') as HTMLInputElement;
   inp.value = F.query;
-  inp.focus();
-  inp.select();
+  inp.focus(); inp.select();
   if (F.query) _doFind(F.query);
 }
 
-function closeFind() {
+function closeFind(): void {
   if (!F.open) return;
   F.open = false;
-  $('find-bar').classList.add('hidden');
+  ($('find-bar') as HTMLElement).classList.add('hidden');
   _clearFind();
 }
 
-function _escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function _clearFind() {
-  // Restore original HTML if we highlighted anything
+function _clearFind(): void {
   if (F.savedHTML) {
-    $('md').innerHTML = F.savedHTML;
+    ($('md') as HTMLElement).innerHTML = F.savedHTML;
     F.savedHTML = '';
-    // Re-attach link handlers
     const tab = getActive();
-    if (tab) {
-      $('md').querySelectorAll('a[href]').forEach(a => {
-        const href = a.getAttribute('href');
-        a.addEventListener('click', e => {
-          e.preventDefault();
-          if (!href) return;
-          if (href.startsWith('#')) { document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' }); return; }
-          if (/^https?:|^mailto:/.test(href)) window.api.openExternal(href);
-          else if (/\.(md|markdown|mdx)$/i.test(href)) openFilePath(href.startsWith('/') ? href : `${tab.dir}/${href}`);
-          else window.api.openPath(href.startsWith('/') ? href : `${tab.dir}/${href}`);
-        });
-      });
-    }
+    if (tab) reattachLinks(tab);
   }
-  F.matches = [];
-  F.idx = 0;
-  $('find-count').textContent = '';
-  $('find-input').classList.remove('no-match');
+  F.matches = []; F.idx = 0;
+  ($('find-count') as HTMLElement).textContent = '';
+  ($('find-input') as HTMLInputElement).classList.remove('no-match');
 }
 
-function _highlightTextNodes(root, regex) {
+function _highlightTextNodes(root: HTMLElement, regex: RegExp): void {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      const tag = node.parentElement?.tagName?.toLowerCase() ?? '';
+    acceptNode(node: Node) {
+      const tag = (node as Text).parentElement?.tagName?.toLowerCase() ?? '';
       if (['script','style','code','pre'].includes(tag)) return NodeFilter.FILTER_REJECT;
       if (!node.textContent?.trim()) return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     },
   });
-  const nodes = [];
-  let n;
-  while ((n = walker.nextNode())) nodes.push(n);
+  const nodes: Text[] = [];
+  let n: Node | null;
+  while ((n = walker.nextNode())) nodes.push(n as Text);
 
   nodes.forEach(textNode => {
     const text = textNode.textContent ?? '';
     regex.lastIndex = 0;
     if (!regex.test(text)) return;
     regex.lastIndex = 0;
-
     const frag = document.createDocumentFragment();
-    let last = 0, m;
+    let last = 0;
+    let m: RegExpExecArray | null;
     while ((m = regex.exec(text)) !== null) {
       if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
       const mark = document.createElement('mark');
@@ -572,54 +574,47 @@ function _highlightTextNodes(root, regex) {
   });
 }
 
-function _doFind(query) {
-  const mdEl = $('md');
-  // Restore clean HTML before re-highlighting
+function _doFind(query: string): void {
+  const mdEl = $('md') as HTMLElement;
   if (F.savedHTML) { mdEl.innerHTML = F.savedHTML; F.savedHTML = ''; }
-
   if (!query.trim()) {
-    F.matches = []; $('find-count').textContent = '';
-    $('find-input').classList.remove('no-match');
+    F.matches = [];
+    ($('find-count') as HTMLElement).textContent = '';
+    ($('find-input') as HTMLInputElement).classList.remove('no-match');
     return;
   }
-
-  // Save clean HTML
   F.savedHTML = mdEl.innerHTML;
-
   try {
-    const regex = new RegExp(_escapeRegex(query), 'gi');
+    const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     _highlightTextNodes(mdEl, regex);
   } catch (_) { return; }
-
-  F.matches = Array.from(mdEl.querySelectorAll('mark.find-hit'));
+  F.matches = Array.from(mdEl.querySelectorAll<HTMLElement>('mark.find-hit'));
   F.idx = 0;
-
-  const inp = /** @type {HTMLInputElement} */ ($('find-input'));
+  const inp = $('find-input') as HTMLInputElement;
   if (F.matches.length === 0) {
     inp.classList.add('no-match');
-    $('find-count').textContent = 'No results';
+    ($('find-count') as HTMLElement).textContent = 'No results';
     return;
   }
-
   inp.classList.remove('no-match');
   _activateMatch(0);
 }
 
-function _activateMatch(idx) {
+function _activateMatch(idx: number): void {
   F.matches.forEach(m => m.classList.remove('current'));
   const el = F.matches[idx];
   if (!el) return;
   el.classList.add('current');
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  $('find-count').textContent = `${idx + 1} of ${F.matches.length}`;
+  ($('find-count') as HTMLElement).textContent = `${idx + 1} of ${F.matches.length}`;
 }
 
-function findNext() {
+function findNext(): void {
   if (!F.matches.length) return;
   F.idx = (F.idx + 1) % F.matches.length;
   _activateMatch(F.idx);
 }
-function findPrev() {
+function findPrev(): void {
   if (!F.matches.length) return;
   F.idx = (F.idx - 1 + F.matches.length) % F.matches.length;
   _activateMatch(F.idx);
@@ -627,9 +622,9 @@ function findPrev() {
 
 // ─── Drag & drop ──────────────────────────────────────────
 // Counter-based so nested-element enter/leave doesn't flicker
-let _dragCount = 0;
+let _dragCount: number = 0;
 
-document.addEventListener('dragenter', e => {
+document.addEventListener('dragenter', (e: DragEvent) => {
   _dragCount++;
   e.preventDefault();
   document.body.classList.add('drag-over');
@@ -638,26 +633,27 @@ document.addEventListener('dragleave', () => {
   _dragCount = Math.max(0, _dragCount - 1);
   if (!_dragCount) document.body.classList.remove('drag-over');
 });
-document.addEventListener('dragover', e => {
+document.addEventListener('dragover', (e: DragEvent) => {
   e.preventDefault();
   if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
 });
-document.addEventListener('drop', async e => {
+document.addEventListener('drop', async (e: DragEvent) => {
   e.preventDefault();
   _dragCount = 0;
   document.body.classList.remove('drag-over');
   const files = Array.from(e.dataTransfer?.files || []);
   for (const f of files) {
     if (!/\.(md|markdown|mdx)$/i.test(f.name)) continue;
-    if (f.path) {
+    const fAny = f as File & { path?: string };
+    if (fAny.path) {
       // Electron exposes .path on dropped File objects
-      await openFilePath(f.path);
+      await openFilePath(fAny.path);
     } else {
       // Fallback: read via FileReader (e.g. when path is unavailable)
       try {
-        const content = await new Promise((res, rej) => {
+        const content = await new Promise<string>((res, rej) => {
           const r = new FileReader();
-          r.onload = ev => res(ev.target.result);
+          r.onload = (ev: ProgressEvent<FileReader>): void => res(ev.target!.result as string);
           r.onerror = rej;
           r.readAsText(f);
         });
@@ -668,11 +664,11 @@ document.addEventListener('drop', async e => {
 });
 
 // ─── Keyboard shortcuts ───────────────────────────────────
-document.addEventListener('keydown', e => {
+document.addEventListener('keydown', (e: KeyboardEvent) => {
   if (!(e.ctrlKey || e.metaKey)) return;
   const k = e.key;
   if (k === 'f' || k === 'F')         { e.preventDefault(); F.open ? closeFind() : openFind(); }
-  if (k === 'o' || k === 'O')         { e.preventDefault(); $('btn-open').click(); }
+  if (k === 'o' || k === 'O')         { e.preventDefault(); ($('btn-open') as HTMLButtonElement).click(); }
   if (k === 'n' || k === 'N')         { e.preventDefault(); createTab({ name: 'Untitled', content: '', dir: '' }); }
   if (k === 's' && !e.shiftKey)       { e.preventDefault(); saveTab(); }
   if (k === 'S' && e.shiftKey)        { e.preventDefault(); saveTabAs(); }
@@ -693,35 +689,35 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── Initialization ───────────────────────────────────────
-async function init() {
+async function init(): Promise<void> {
   setTheme(S.theme);
 
   // Wire up toolbar
   $('btn-toc').onclick     = toggleTOC;
-  $('btn-new').onclick     = () => createTab({ name: 'Untitled', content: '', dir: '' });
-  $('btn-open').onclick    = async () => { const fs = await window.api.openFiles(); fs.forEach(f => createTab(f)); };
+  $('btn-new').onclick     = (): void => createTab({ name: 'Untitled', content: '', dir: '' });
+  $('btn-open').onclick    = async (): Promise<void> => { const fs = await window.api.openFiles(); fs.forEach(f => createTab(f)); };
   $('btn-save').onclick    = saveTab;
   $('btn-width').onclick   = toggleWidth;
-  $('btn-theme').onclick   = () => setTheme(S.theme === 'dark' ? 'light' : 'dark');
-  $('btn-zm').onclick      = () => adjustZoom(-0.1);
-  $('btn-zp').onclick      = () => adjustZoom(0.1);
-  $('btn-new-tab').onclick = () => createTab({ name: 'Untitled', content: '', dir: '' });
-  document.querySelectorAll('.mode-btn').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+  $('btn-theme').onclick   = (): void => setTheme(S.theme === 'dark' ? 'light' : 'dark');
+  $('btn-zm').onclick      = (): void => adjustZoom(-0.1);
+  $('btn-zp').onclick      = (): void => adjustZoom(0.1);
+  $('btn-new-tab').onclick = (): void => createTab({ name: 'Untitled', content: '', dir: '' });
+  document.querySelectorAll('.mode-btn').forEach(b => (b as HTMLElement).onclick = (): void => setMode((b as HTMLElement).dataset.mode as ViewMode));
 
   // Find bar
-  const findInp = /** @type {HTMLInputElement} */ ($('find-input'));
+  const findInp = $('find-input') as HTMLInputElement;
   findInp.addEventListener('input', () => { F.query = findInp.value; _doFind(F.query); });
-  findInp.addEventListener('keydown', e => {
-    if (e.key === 'Enter')  { e.shiftKey ? findPrev() : findNext(); }
-    if (e.key === 'Escape') { closeFind(); }
+  findInp.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter')     { e.shiftKey ? findPrev() : findNext(); }
+    if (e.key === 'Escape')    { closeFind(); }
     if (e.key === 'ArrowDown') { e.preventDefault(); findNext(); }
     if (e.key === 'ArrowUp')   { e.preventDefault(); findPrev(); }
   });
-  $('find-prev').onclick  = findPrev;
-  $('find-next').onclick  = findNext;
-  $('find-close').onclick = closeFind;
+  ($('find-prev') as HTMLElement).onclick  = findPrev;
+  ($('find-next') as HTMLElement).onclick  = findNext;
+  ($('find-close') as HTMLElement).onclick = closeFind;
 
-  $('btn-reload').onclick = () => {
+  $('btn-reload').onclick = (): void => {
     const tab = getActive();
     if (!tab?.pendingDiskContent) return;
     tab.content = tab.pendingDiskContent; tab.savedContent = tab.pendingDiskContent;
@@ -731,7 +727,7 @@ async function init() {
     $('reload-bar').classList.add('hidden');
     updateTabLabel(tab); updateStatus();
   };
-  $('btn-dismiss').onclick = () => {
+  $('btn-dismiss').onclick = (): void => {
     const tab = getActive();
     if (tab) tab.diskChanged = false;
     $('reload-bar').classList.add('hidden');
@@ -739,7 +735,7 @@ async function init() {
 
   // IPC
   window.api.onFileChanged(handleFileChanged);
-  window.api.onMenu((action, ...args) => {
+  window.api.onMenu((action: string, ...args: unknown[]) => {
     switch (action) {
       case 'new':          createTab({ name: 'Untitled', content: '', dir: '' }); break;
       case 'open':         $('btn-open').click(); break;
@@ -751,8 +747,8 @@ async function init() {
       case 'toggle-toc':   toggleTOC(); break;
       case 'toggle-width': toggleWidth(); break;
       case 'theme':        setTheme(S.theme === 'dark' ? 'light' : 'dark'); break;
-      case 'mode':         setMode(args[0]); break;
-      case 'zoom':         args[0] === 0 ? adjustZoom(0) : adjustZoom(args[0] * 0.1); break;
+      case 'mode':         setMode(args[0] as ViewMode); break;
+      case 'zoom':         (args[0] as number) === 0 ? adjustZoom(0) : adjustZoom((args[0] as number) * 0.1); break;
     }
   });
 

@@ -1,32 +1,33 @@
-const { app, BrowserWindow, ipcMain, shell, dialog, Menu } = require('electron');
-const path = require('path');
-const fs   = require('fs');
+import { app, BrowserWindow, ipcMain, shell, dialog, Menu, MenuItemConstructorOptions } from 'electron';
+import path from 'path';
+import fs from 'fs';
 
-let win;
-const watchers = new Map(); // filePath → watcher
+let win: BrowserWindow;
+const watchers = new Map<string, fs.FSWatcher>(); // filePath → watcher
 
 // ── Persistence ───────────────────────────────────────────
 const userData   = app.getPath('userData');
 const recentFile = path.join(userData, 'recent.json');
 
-function getRecent() {
+function getRecent(): string[] {
   try { return JSON.parse(fs.readFileSync(recentFile, 'utf-8')); }
   catch { return []; }
 }
-function addRecent(fp) {
-  let r = getRecent().filter(p => p !== fp);
+
+function addRecent(fp: string): void {
+  let r = getRecent().filter((p: string) => p !== fp);
   r.unshift(fp);
   try { fs.mkdirSync(userData, { recursive: true }); fs.writeFileSync(recentFile, JSON.stringify(r.slice(0, 25))); } catch {}
 }
 
 // ── File utils ────────────────────────────────────────────
-function readData(fp) {
+function readData(fp: string): { filePath: string; dir: string; name: string; content: string } {
   return { filePath: fp, dir: path.dirname(fp), name: path.basename(fp), content: fs.readFileSync(fp, 'utf-8') };
 }
 
-function watchFile(fp) {
+function watchFile(fp: string): void {
   if (watchers.has(fp)) return;
-  let debounce;
+  let debounce: ReturnType<typeof setTimeout>;
   const w = fs.watch(fp, () => {
     clearTimeout(debounce);
     debounce = setTimeout(() => {
@@ -37,7 +38,7 @@ function watchFile(fp) {
 }
 
 // ── Window ────────────────────────────────────────────────
-const initialArgs = process.argv.slice(2).filter(a => !a.startsWith('-') && !a.endsWith('.js') && !a.endsWith('.asar'));
+const initialArgs = process.argv.slice(2).filter((a: string) => !a.startsWith('-') && !a.endsWith('.js') && !a.endsWith('.asar'));
 
 app.whenReady().then(() => {
   win = new BrowserWindow({
@@ -55,8 +56,8 @@ app.whenReady().then(() => {
 
 // ── IPC ───────────────────────────────────────────────────
 ipcMain.handle('get-initial', () => {
-  const files = initialArgs.filter(a => fs.existsSync(a)).map(a => path.resolve(a));
-  files.forEach(fp => { addRecent(fp); watchFile(fp); });
+  const files = initialArgs.filter((a: string) => fs.existsSync(a)).map((a: string) => path.resolve(a));
+  files.forEach((fp: string) => { addRecent(fp); watchFile(fp); });
   return { files: files.map(readData), recent: getRecent() };
 });
 
@@ -65,23 +66,26 @@ ipcMain.handle('open-files', async () => {
     filters: [{ name: 'Markdown', extensions: ['md', 'markdown', 'mdx'] }],
     properties: ['openFile', 'multiSelections'],
   });
-  const result = [];
+  const result: ReturnType<typeof readData>[] = [];
   for (const fp of (filePaths || [])) { addRecent(fp); watchFile(fp); result.push(readData(fp)); }
   return result;
 });
 
-ipcMain.handle('load-md', (_, fp) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ipcMain.handle('load-md', (_: any, fp: string) => {
   const abs = path.resolve(fp);
   if (!fs.existsSync(abs)) return null;
   addRecent(abs); watchFile(abs);
   return readData(abs);
 });
 
-ipcMain.handle('save-file', (_, fp, content) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ipcMain.handle('save-file', (_: any, fp: string, content: string) => {
   fs.writeFileSync(fp, content, 'utf-8'); return true;
 });
 
-ipcMain.handle('save-as', async (_, defaultName, content) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ipcMain.handle('save-as', async (_: any, defaultName: string, content: string) => {
   const { filePath, canceled } = await dialog.showSaveDialog(win, {
     defaultPath: defaultName || 'untitled.md',
     filters: [{ name: 'Markdown', extensions: ['md', 'markdown'] }],
@@ -92,7 +96,8 @@ ipcMain.handle('save-as', async (_, defaultName, content) => {
   return filePath;
 });
 
-ipcMain.handle('export-html', async (_, name, html) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ipcMain.handle('export-html', async (_: any, name: string, html: string) => {
   const { filePath, canceled } = await dialog.showSaveDialog(win, {
     defaultPath: (name || 'document').replace(/\.mdx?$/, '') + '.html',
     filters: [{ name: 'HTML', extensions: ['html'] }],
@@ -102,15 +107,18 @@ ipcMain.handle('export-html', async (_, name, html) => {
   return filePath;
 });
 
-ipcMain.handle('unwatch',       (_, fp) => { watchers.get(fp)?.close(); watchers.delete(fp); });
-ipcMain.handle('get-recent',    ()      => getRecent());
-ipcMain.handle('open-external', (_, u)  => shell.openExternal(u));
-ipcMain.handle('open-path',     (_, p)  => shell.openPath(p));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ipcMain.handle('unwatch',       (_: any, fp: string) => { watchers.get(fp)?.close(); watchers.delete(fp); });
+ipcMain.handle('get-recent',    ()                   => getRecent());
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ipcMain.handle('open-external', (_: any, u: string)  => shell.openExternal(u));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ipcMain.handle('open-path',     (_: any, p: string)  => shell.openPath(p));
 
 // ── Menu ──────────────────────────────────────────────────
-function buildMenu() {
-  const s = (...a) => win.webContents.send('menu', ...a);
-  const t = [
+function buildMenu(): void {
+  const s = (...a: unknown[]): void => { win.webContents.send('menu', ...a); };
+  const t: MenuItemConstructorOptions[] = [
     { label: 'File', submenu: [
       { label: 'New',             accelerator: 'CmdOrCtrl+N',       click: () => s('new') },
       { label: 'Open...',         accelerator: 'CmdOrCtrl+O',       click: () => s('open') },
@@ -126,8 +134,6 @@ function buildMenu() {
     { label: 'Edit', submenu: [
       { role: 'undo' }, { role: 'redo' }, { type: 'separator' },
       { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' },
-      { type: 'separator' },
-      { label: 'Find in Document', accelerator: 'CmdOrCtrl+F', click: () => s('find') },
     ]},
     { label: 'View', submenu: [
       { label: 'Preview',        accelerator: 'CmdOrCtrl+1',        click: () => s('mode', 'preview') },

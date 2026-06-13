@@ -1,8 +1,8 @@
-# MDViewer
+# md-viewer
 
 A fast, beautiful Markdown viewer and editor for Linux. Built with Electron — opens as your default app for `.md` files.
 
-![MDViewer screenshot](https://raw.githubusercontent.com/Silenttttttt/mdviewer/main/assets/screenshot.png)
+![md-viewer screenshot](https://raw.githubusercontent.com/Silenttttttt/md-viewer/main/assets/screenshot.png)
 
 ## Features
 
@@ -29,8 +29,8 @@ A fast, beautiful Markdown viewer and editor for Linux. Built with Electron — 
 ### 1. Clone
 
 ```bash
-git clone https://github.com/Silenttttttt/mdviewer.git
-cd mdviewer
+git clone https://github.com/Silenttttttt/md-viewer.git
+cd md-viewer
 ```
 
 ### 2. Run setup
@@ -50,7 +50,7 @@ This downloads (once, cached afterwards):
 ### 3. Open a file
 
 ```bash
-electron /path/to/mdviewer file.md
+electron /path/to/md-viewer file.md
 ```
 
 Or just double-click any `.md` file in your file manager.
@@ -75,6 +75,7 @@ Or just double-click any `.md` file in your file manager.
 | `Ctrl+1` | Preview mode |
 | `Ctrl+2` | Edit mode |
 | `Ctrl+3` | Split mode |
+| `Ctrl+F` | Find in document (preview/split mode) |
 | `Ctrl+\` | Toggle TOC sidebar |
 | `Ctrl+Shift+W` | Toggle content width |
 | `Ctrl+Shift+T` | Toggle theme |
@@ -102,7 +103,7 @@ npm run test:e2e
 ## Project Structure
 
 ```
-mdviewer/
+md-viewer/
 ├── main.js          — Electron main process (IPC, file I/O, menus)
 ├── preload.js       — Context bridge (exposes safe APIs to renderer)
 ├── renderer.html    — App shell (HTML structure)

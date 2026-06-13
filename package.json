@@ -1,11 +1,14 @@
 {
-  "name": "mdviewer",
+  "name": "md-viewer",
   "version": "1.0.0",
   "description": "Fast markdown viewer and editor with tabs, Mermaid, and live reload",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "start": "electron .",
+    "build": "tsc -p tsconfig.main.json && tsc -p tsconfig.renderer.json",
+    "build:watch": "tsc -p tsconfig.main.json -w & tsc -p tsconfig.renderer.json -w",
+    "start": "npm run build && electron .",
     "test": "jest",
+    "pretest": "npm run build",
     "test:unit": "jest test/unit",
     "test:dom": "jest test/dom",
     "test:e2e": "playwright test",
@@ -15,7 +18,12 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.0.0",
+    "electron": "^42.4.0",
     "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0"
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.7.0"
   }
 }

@@ -112,6 +112,17 @@
 
     <!-- Preview pane (preview / split) -->
     <div id="preview-pane">
+      <!-- Find bar (Ctrl+F) -->
+      <div id="find-bar" class="hidden">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0;opacity:.5">
+          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
+        </svg>
+        <input id="find-input" type="search" placeholder="Find in document…" autocomplete="off" spellcheck="false">
+        <span id="find-count"></span>
+        <button class="find-nav" id="find-prev" title="Previous (Shift+Enter)">↑</button>
+        <button class="find-nav" id="find-next" title="Next (Enter / ↓)">↓</button>
+        <button id="find-close" title="Close (Esc)">×</button>
+      </div>
       <div id="wrap">
         <div id="reload-bar" class="hidden">
           <span>⚠ File changed on disk</span>
@@ -144,6 +155,6 @@
 <script src="./lib/cm-dialog.js"></script>
 <script src="./lib/marked.umd.js"></script>
 <script src="./lib/highlight.min.js"></script>
-<script src="./renderer.js"></script>
+<script src="./dist/renderer.js"></script>
 </body>
 </html>
