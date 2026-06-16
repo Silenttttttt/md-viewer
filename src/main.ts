@@ -37,6 +37,33 @@ function watchFile(fp: string): void {
   watchers.set(fp, w);
 }
 
+// ── Single instance lock ──────────────────────────────────
+// If another instance tries to open, hand off its files and quit.
+const gotLock = app.requestSingleInstanceLock();
+
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event: Electron.Event, argv: string[]) => {
+    // Focus the existing window
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+    // Open any file(s) the second instance was given
+    const files = argv
+      .slice(2)
+      .filter((a: string) => !a.startsWith('-') && !a.endsWith('.js') && !a.endsWith('.asar'))
+      .filter((a: string) => fs.existsSync(a))
+      .map((a: string) => path.resolve(a));
+    files.forEach((fp: string) => {
+      addRecent(fp);
+      watchFile(fp);
+      win.webContents.send('open-tab', readData(fp));
+    });
+  });
+}
+
 // ── Window ────────────────────────────────────────────────
 const initialArgs = process.argv.slice(2).filter((a: string) => !a.startsWith('-') && !a.endsWith('.js') && !a.endsWith('.asar'));
 

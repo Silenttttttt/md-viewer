@@ -790,6 +790,10 @@ async function init(): Promise<void> {
 
   // IPC
   window.api.onFileChanged(handleFileChanged);
+  // Triggered when a second app instance hands off a file (single-instance lock)
+  window.api.onOpenTab((data: FileData) => {
+    createTab(data); // createTab already deduplicates by filePath
+  });
   window.api.onMenu((action: string, ...args: unknown[]) => {
     switch (action) {
       case 'new':          createTab({ name: 'Untitled', content: '', dir: '' }); break;
