@@ -191,7 +191,16 @@ async function renderContent(tab: TabState): Promise<void> {
   });
 
   // Checkboxes read-only
-  mdEl.querySelectorAll('input[type="checkbox"]').forEach(cb => (cb as HTMLInputElement).disabled = true);
+  // Task list: ensure class exists regardless of marked version, then make non-interactive
+  mdEl.querySelectorAll<HTMLLIElement>('li').forEach(li => {
+    if (li.querySelector(':scope > input[type="checkbox"]')) {
+      li.classList.add('task-list-item');
+    }
+  });
+  mdEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach(cb => {
+    cb.disabled = true;                  // read-only
+    cb.style.pointerEvents = 'none';     // belt-and-suspenders: ignore all mouse events
+  });
 
   // TOC
   buildTOC(mdEl);
