@@ -62,6 +62,7 @@ interface MDViewerAPI {
   onFileChanged: (cb: (data: { filePath: string; content: string }) => void) => void;
   onMenu:        (cb: (action: string, ...args: unknown[]) => void) => void;
   onOpenTab:     (cb: (data: FileData) => void) => void;
+  startDrag:     (filePath: string) => void;
 }
 
 // ── Window extension ───────────────────────────────────────

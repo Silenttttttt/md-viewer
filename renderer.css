@@ -126,6 +126,8 @@ html, body {
 .tab:hover .tab-close,
 .tab.active .tab-close { opacity: 1; }
 .tab-close:hover { background: var(--bg3); color: var(--danger); }
+.tab[draggable="true"] { cursor: grab; }
+.tab[draggable="true"]:active { cursor: grabbing; }
 
 #btn-new-tab {
   width: 36px; flex-shrink: 0;

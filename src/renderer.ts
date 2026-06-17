@@ -299,6 +299,16 @@ function renderTabBar(): void {
       activateTab(idx);
     });
     el.addEventListener('auxclick', (e: MouseEvent) => { if (e.button === 1) closeTab(idx); });
+
+    // Native file drag-out: drag the tab into Thunar, file pickers, etc.
+    if (tab.filePath) {
+      el.setAttribute('draggable', 'true');
+      el.addEventListener('dragstart', (e: DragEvent) => {
+        e.preventDefault(); // suppress browser's built-in drag; let Electron handle it
+        window.api.startDrag(tab.filePath as string);
+      });
+    }
+
     bar.appendChild(el);
   });
   $('content-area').classList.toggle('no-tabs', S.tabs.length === 0);

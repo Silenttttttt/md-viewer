@@ -17,6 +17,7 @@ type ExposedAPI = {
   onFileChanged: (cb: (data: { filePath: string; content: string }) => void) => void;
   onMenu:        (cb: (action: string, ...args: unknown[]) => void)           => void;
   onOpenTab:     (cb: (data: unknown) => void)                                => void;
+  startDrag:     (filePath: string)                                           => void;
 };
 
 const api: ExposedAPI = {
@@ -34,6 +35,7 @@ const api: ExposedAPI = {
   onFileChanged: (cb) => ipcRenderer.on('file-changed', (_: IpcRendererEvent, d: { filePath: string; content: string }) => cb(d)),
   onMenu:        (cb) => ipcRenderer.on('menu', (_: IpcRendererEvent, ...a: unknown[]) => cb(a[0] as string, ...a.slice(1))),
   onOpenTab:     (cb) => ipcRenderer.on('open-tab', (_: IpcRendererEvent, d: unknown) => cb(d)),
+  startDrag:     (fp) => ipcRenderer.send('start-drag', fp),
 };
 
 contextBridge.exposeInMainWorld('api', api);

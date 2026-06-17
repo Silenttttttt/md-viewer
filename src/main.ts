@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, dialog, Menu, MenuItemConstructorOptions } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, dialog, Menu, MenuItemConstructorOptions, nativeImage } from 'electron';
 import path from 'path';
 import fs from 'fs';
 
@@ -141,6 +141,17 @@ ipcMain.handle('get-recent',    ()                   => getRecent());
 ipcMain.handle('open-external', (_: any, u: string)  => shell.openExternal(u));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ipcMain.handle('open-path',     (_: any, p: string)  => shell.openPath(p));
+
+// Native file drag-out (lets user drag a tab into Thunar, file pickers, etc.)
+ipcMain.on('start-drag', async (event, filePath: string) => {
+  if (!filePath || !fs.existsSync(filePath)) return;
+  try {
+    const icon = await app.getFileIcon(filePath, { size: 'normal' });
+    event.sender.startDrag({ file: filePath, icon });
+  } catch {
+    event.sender.startDrag({ file: filePath, icon: nativeImage.createEmpty() });
+  }
+});
 
 // ── Menu ──────────────────────────────────────────────────
 function buildMenu(): void {
