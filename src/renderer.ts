@@ -313,9 +313,11 @@ function renderTabBar(): void {
     if (tab.filePath) {
       el.setAttribute('draggable', 'true');
       el.addEventListener('dragstart', (e: DragEvent) => {
-        e.preventDefault(); // suppress browser's built-in drag; let Electron handle it
+        e.preventDefault();
+        _isInternalDrag = true;          // tell the document drop handler to ignore this
         window.api.startDrag(tab.filePath as string);
       });
+      el.addEventListener('dragend', () => { _isInternalDrag = false; });
     }
 
     bar.appendChild(el);
@@ -692,11 +694,13 @@ function findPrev(): void {
 // ─── Drag & drop ──────────────────────────────────────────
 // Counter-based so nested-element enter/leave doesn't flicker
 let _dragCount: number = 0;
+// Set true when a TAB drag starts so the document drop handler ignores it
+let _isInternalDrag: boolean = false;
 
 document.addEventListener('dragenter', (e: DragEvent) => {
   _dragCount++;
   e.preventDefault();
-  document.body.classList.add('drag-over');
+  if (!_isInternalDrag) document.body.classList.add('drag-over');
 });
 document.addEventListener('dragleave', () => {
   _dragCount = Math.max(0, _dragCount - 1);
@@ -704,12 +708,14 @@ document.addEventListener('dragleave', () => {
 });
 document.addEventListener('dragover', (e: DragEvent) => {
   e.preventDefault();
-  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  if (e.dataTransfer) e.dataTransfer.dropEffect = _isInternalDrag ? 'none' : 'copy';
 });
 document.addEventListener('drop', async (e: DragEvent) => {
   e.preventDefault();
   _dragCount = 0;
   document.body.classList.remove('drag-over');
+  // Internal tab drag — native file drag already handled by startDrag; skip re-opening
+  if (_isInternalDrag) { _isInternalDrag = false; return; }
   const files = Array.from(e.dataTransfer?.files || []);
   for (const f of files) {
     if (!/\.(md|markdown|mdx)$/i.test(f.name)) continue;
