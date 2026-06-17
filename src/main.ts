@@ -21,6 +21,10 @@ function addRecent(fp: string): void {
 }
 
 // ── File utils ────────────────────────────────────────────
+function isReadableFile(fp: string): boolean {
+  try { return fs.statSync(fp).isFile(); } catch { return false; }
+}
+
 function readData(fp: string): { filePath: string; dir: string; name: string; content: string } {
   return { filePath: fp, dir: path.dirname(fp), name: path.basename(fp), content: fs.readFileSync(fp, 'utf-8') };
 }
@@ -54,8 +58,8 @@ if (!gotLock) {
     const files = argv
       .slice(2)
       .filter((a: string) => !a.startsWith('-') && !a.endsWith('.js') && !a.endsWith('.asar'))
-      .filter((a: string) => fs.existsSync(a))
-      .map((a: string) => path.resolve(a));
+      .map((a: string) => path.resolve(a))
+      .filter(isReadableFile);
     files.forEach((fp: string) => {
       addRecent(fp);
       watchFile(fp);
@@ -83,7 +87,7 @@ app.whenReady().then(() => {
 
 // ── IPC ───────────────────────────────────────────────────
 ipcMain.handle('get-initial', () => {
-  const files = initialArgs.filter((a: string) => fs.existsSync(a)).map((a: string) => path.resolve(a));
+  const files = initialArgs.map((a: string) => path.resolve(a)).filter(isReadableFile);
   files.forEach((fp: string) => { addRecent(fp); watchFile(fp); });
   return { files: files.map(readData), recent: getRecent() };
 });
@@ -101,7 +105,7 @@ ipcMain.handle('open-files', async () => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ipcMain.handle('load-md', (_: any, fp: string) => {
   const abs = path.resolve(fp);
-  if (!fs.existsSync(abs)) return null;
+  if (!isReadableFile(abs)) return null;
   addRecent(abs); watchFile(abs);
   return readData(abs);
 });
